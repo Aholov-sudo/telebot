@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Control</title>
+    
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        :root {
+            --bg: var(--tg-theme-bg-color, #ffffff);
+            --text: var(--tg-theme-text-color, #222222);
+            --hint: var(--tg-theme-hint-color, #999999);
+            --btn: var(--tg-theme-button-color, #2481cc);
+            --sec-bg: var(--tg-theme-secondary-bg-color, #f4f4f7);
+        }
+
+        body {
+            font-family: -apple-system, system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 16px;
+            user-select: none;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .card {
+            background: var(--sec-bg);
+            border-radius: 20px;
+            padding: 24px;
+            text-align: center;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 16px;
+            padding: 18px;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: transform 0.1s;
+            cursor: pointer;
+        }
+
+        .btn:active { transform: scale(0.96); }
+        .btn-start { background: #34c759; }
+        .btn-stop { background: #ff3b30; }
+
+        .counter { font-size: 48px; font-weight: 800; margin: 8px 0; }
+        .label { font-size: 13px; color: var(--hint); text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: flex-end;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: var(--bg);
+            width: 100%;
+            border-radius: 20px 20px 0 0;
+            padding: 24px;
+            box-sizing: border-box;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--sec-bg);
+        }
+
+        .version-text {
+            text-align: center;
+            color: var(--hint);
+            font-size: 12px;
+            margin-top: 20px;
+        }
+
+        .close-btn {
+            background: var(--btn);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px;
+            width: 100%;
+            margin-top: 16px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function App() {
+            const [count, setCount] = useState(0);
+            const [isRunning, setIsRunning] = useState(false);
+            const [isModalOpen, setIsModalOpen] = useState(false);
+            const [isDarkMode, setIsDarkMode] = useState(window.Telegram.WebApp.colorScheme === 'dark');
+            const tg = window.Telegram.WebApp;
+
+            useEffect(() => {
+                tg.ready();
+                tg.expand();
+                lucide.createIcons();
+            }, []);
+
+            useEffect(() => {
+                lucide.createIcons();
+            }, [isModalOpen]);
+
+            const handleCommand = (cmd) => {
+                tg.HapticFeedback.impactOccurred('medium');
+                setIsRunning(cmd === 'start');
+                console.log("Команда:", cmd);
+            };
+
+            const toggleTheme = () => {
+                const newMode = !isDarkMode;
+                setIsDarkMode(newMode);
+                // В реальности Telegram сам управляет темой, 
+                // но для теста вручную меняем переменную
+                document.documentElement.style.setProperty('--bg', newMode ? '#1c1c1d' : '#ffffff');
+                document.documentElement.style.setProperty('--text', newMode ? '#ffffff' : '#222222');
+                document.documentElement.style.setProperty('--sec-bg', newMode ? '#2c2c2e' : '#f4f4f7');
+            };
+
+            return (
+                <div>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
+                        <h2 style={{margin: 0}}>Motors</h2>
+                        <div onClick={() => setIsModalOpen(true)} style={{cursor: 'pointer'}}>
+                            <i data-lucide="settings" style={{color: 'var(--hint)'}}></i>
+                        </div>
+                    </div>
+
+                    <div className="card">
+                        <div className="label">Nut counter</div>
+                        <div className="counter">{count}</div>
+                        <div style={{color: isRunning ? '#34c759' : '#ff3b30', fontWeight: 'bold'}}>
+                            {isRunning ? 'ON' : 'OFF'}
+                        </div>
+                    </div>
+
+                    <div className="grid">
+                        <button className="btn btn-start" onClick={() => handleCommand('start')}>
+                            <i data-lucide="play" fill="white" size="20"></i> START
+                        </button>
+                        <button className="btn btn-stop" onClick={() => handleCommand('stop')}>
+                            <i data-lucide="square" fill="white" size="20"></i> STOP
+                        </button>
+                    </div>
+
+                    {isModalOpen && (
+                        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
+                            <div className="modal-content" onClick={e => e.stopPropagation()}>
+                                <h3 style={{marginTop: 0}}>Settings</h3>
+                                
+                                <div className="settings-item">
+                                    <span>Dark Mode</span>
+                                    <div onClick={toggleTheme} style={{cursor: 'pointer'}}>
+                                        <i data-lucide={isDarkMode ? "moon" : "sun"}></i>
+                                    </div>
+                                </div>
+
+                                <div className="version-text">
+                                    Version 1.0.1
+                                </div>
+
+                                <button className="close-btn" onClick={() => setIsModalOpen(false)}>
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
